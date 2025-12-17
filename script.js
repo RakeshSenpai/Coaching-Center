@@ -229,3 +229,46 @@ function updateButtonStates() {
         elements.nextBtn.style.opacity = currentSlide === slides.length - 1 ? '0.5' : '1';
     }
 }
+
+
+
+// Navbar scroll effect
+let lastScroll = 0;
+window.addEventListener('scroll', () => {
+    const currentScroll = window.scrollY;
+    
+    if (currentScroll > 50) {
+        elements.navbar?.classList.add('scrolled');
+    } else {
+        elements.navbar?.classList.remove('scrolled');
+    }
+    
+    lastScroll = currentScroll;
+});
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', init);
+
+// Simple animations without GSAP for speed
+function animateOnScroll() {
+    const elements = document.querySelectorAll('.feature-card, .learn-card, .course-card, .testimonial-card, .pricing-card');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    elements.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        observer.observe(el);
+    });
+}
+
+// Start animations when page loads
+window.addEventListener('load', animateOnScroll);
