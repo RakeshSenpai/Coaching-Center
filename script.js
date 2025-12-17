@@ -97,3 +97,41 @@ function setupEventListeners() {
             updateSlider();
         }
     });
+
+
+
+    // Touch/swipe for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    elements.coachesTrack?.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+
+    elements.coachesTrack?.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+
+    function handleSwipe() {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+        
+        if (Math.abs(diff) > swipeThreshold && !isAnimating) {
+            if (diff > 0) {
+                // Swipe left - next slide
+                const slides = document.querySelectorAll('.coach-item');
+                if (currentSlide < slides.length - 1) {
+                    currentSlide++;
+                    updateSlider();
+                }
+            } else {
+                // Swipe right - previous slide
+                if (currentSlide > 0) {
+                    currentSlide--;
+                    updateSlider();
+                }
+            }
+        }
+    }
+}
