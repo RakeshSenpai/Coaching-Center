@@ -1067,3 +1067,53 @@ body {
         transform: scale(1);
     }
 }
+
+
+
+@media (max-width: 576px) {
+    .main-heading {
+        font-size: 40px;
+    }
+    
+    .hero-title {
+        font-size: 18px;
+    }
+    
+    .section-title {
+        font-size: 32px;
+    }
+    
+    .coach-content h3 {
+        font-size: 28px;
+    }
+    
+    .coach-specialty {
+        font-size: 16px;
+    }
+    
+    .coach-intro,
+    .coach-desc {
+        font-size: 15px;
+    }
+    
+    .features-grid,
+    .courses-grid,
+    .pricing-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .feature-card,
+    .course-card,
+    .pricing-card {
+        padding: 30px;
+    }
+    
+    .slider-navigation {
+        gap: 15px;
+    }
+    
+    .slider-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
