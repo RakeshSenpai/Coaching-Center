@@ -75,3 +75,25 @@ function setupEventListeners() {
             }
         });
     });
+
+
+    // Contact button
+    document.querySelector('.cta-btn')?.addEventListener('click', () => {
+        smoothScroll('#home');
+    });
+
+    // Slider buttons
+    elements.prevBtn?.addEventListener('click', () => {
+        if (currentSlide > 0 && !isAnimating) {
+            currentSlide--;
+            updateSlider();
+        }
+    });
+
+    elements.nextBtn?.addEventListener('click', () => {
+        const slides = document.querySelectorAll('.coach-item');
+        if (currentSlide < slides.length - 1 && !isAnimating) {
+            currentSlide++;
+            updateSlider();
+        }
+    });
