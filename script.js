@@ -135,3 +135,36 @@ function setupEventListeners() {
         }
     }
 }
+
+
+
+// Slider Functions
+function initSlider() {
+    if (!elements.coachesTrack) return;
+    
+    const container = elements.coachesTrack.parentElement;
+    slideWidth = container.offsetWidth;
+    
+    // Set slide widths
+    const slides = document.querySelectorAll('.coach-item');
+    slides.forEach(slide => {
+        slide.style.minWidth = `${slideWidth}px`;
+        slide.style.width = `${slideWidth}px`;
+    });
+    
+    createDots();
+    
+    // Update on resize (debounced)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            slideWidth = elements.coachesTrack.parentElement.offsetWidth;
+            slides.forEach(slide => {
+                slide.style.minWidth = `${slideWidth}px`;
+                slide.style.width = `${slideWidth}px`;
+            });
+            updateSlider();
+        }, 150);
+    });
+}
