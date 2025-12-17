@@ -194,3 +194,142 @@ body {
     border-radius: 20px;
     opacity: 0.3;
 }
+
+
+/* Why Join Section */
+.why-join {
+    padding: 100px 0;
+    background: #0a0a0a;
+}
+
+.section-title {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+.section-subtitle {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 60px;
+    font-size: 18px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.feature-card {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    padding: 40px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
+}
+
+.feature-card h3 {
+    font-size: 28px;
+    margin-bottom: 15px;
+}
+
+.feature-card p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 25px;
+}
+
+.avatars {
+    display: flex;
+    gap: -10px;
+    margin: 20px 0;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #c4b5fd);
+    border: 2px solid #7c3aed;
+    margin-left: -10px;
+}
+
+.avatar:first-child {
+    margin-left: 0;
+}
+
+.stat {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 15px;
+}
+
+/* Coaches Section */
+.coaches-section {
+    padding: 100px 0;
+    background: #ffffff;
+    color: #0a0a0a;
+    overflow: hidden;
+}
+
+.coaches-section .section-title {
+    color: #0a0a0a;
+}
+
+.coaches-section .section-subtitle {
+    color: #4a4a4a;
+}
+
+.coaches-slider-container {
+    position: relative;
+    overflow: hidden;
+    margin-top: 50px;
+}
+
+.coaches-track {
+    display: flex;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+.coach-item {
+    min-width: 100%;
+    display: flex;
+    gap: 60px;
+    align-items: center;
+    padding: 40px;
+    flex-shrink: 0;
+}
+
+.coach-content {
+    flex: 1;
+    max-width: 500px;
+}
+
+.coach-content h3 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #0a0a0a;
+}
+
+.coach-badges {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+}
