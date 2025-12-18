@@ -703,6 +703,21 @@ p {
     align-items: center;
     justify-content: center;
 }
+.er {
+    background-image: url(https://img.freepik.com/free-photo/waist-up-portrait-handsome-serious-unshaven-male-keeps-hands-together-dressed-dark-blue-shirt-has-talk-with-interlocutor-stands-against-white-wall-self-confident-man-freelancer_273609-16320.jpg?t=st=1766060587~exp=1766064187~hmac=d15686268f631fdfb3ce7d90ccce04acfdc92c27674710b9c49ca3c6d3b16caa&w=1480);
+    background-size: cover;
+    background-position: center;
+}
+.mc {
+    background-image: url(https://img.freepik.com/premium-photo/young-man-with-beard-glasses_1272475-14271.jpg?w=1480);
+    background-size: cover;
+    background-position: center;
+}
+.sa {
+    background-image: url(https://img.freepik.com/free-photo/handsome-bearded-businessman-rubbing-hands-having-deal_176420-18778.jpg?t=st=1766063943~exp=1766067543~hmac=1712bca8bd774b4e7152e9cc8c4ed909d0333b15620ba2814e35954fa071ed2b&w=1480);
+    background-size: cover;
+    background-position: center;
+}
 
 .initials {
     font-size: 4rem;
@@ -1333,6 +1348,9 @@ p {
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-light), #c4b5fd);
     flex-shrink: 0;
+    background-image: url(https://img.freepik.com/free-photo/handsome-bearded-businessman-rubbing-hands-having-deal_176420-18778.jpg?t=st=1766063943~exp=1766067543~hmac=1712bca8bd774b4e7152e9cc8c4ed909d0333b15620ba2814e35954fa071ed2b&w=1480);
+    background-size: cover;
+    background-position: center;
 }
 
 .author-info h4 {
