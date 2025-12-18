@@ -1301,6 +1301,9 @@ body {
     width: 100%;
     height: 500px;
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    background-image: url(                    https://img.freepik.com/free-photo/waist-up-portrait-handsome-serious-unshaven-male-keeps-hands-together-dressed-dark-blue-shirt-has-talk-with-interlocutor-stands-against-white-wall-self-confident-man-freelancer_273609-16320.jpg?t=st=1766060587~exp=1766064187~hmac=d15686268f631fdfb3ce7d90ccce04acfdc92c27674710b9c49ca3c6d3b16caa&w=1480);
+    background-size: cover;
+    background-position: center;
     border-radius: 20px;
 }
 
