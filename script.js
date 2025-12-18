@@ -1,174 +1,51 @@
-// ==================== DOM ELEMENTS ====================
-const elements = {
-    navbar: document.querySelector('.navbar'),
-    mobileMenuBtn: document.querySelector('.mobile-menu-btn'),
-    navLinks: document.querySelector('.nav-links'),
-    coachesSlider: document.querySelector('.coaches-slider'),
-    sliderPagination: document.querySelector('.slider-pagination'),
-    prevArrow: document.querySelector('.prev-arrow'),
-    nextArrow: document.querySelector('.next-arrow')
-};
 
-// ==================== STATE ====================
-let sliderState = {
-    currentIndex: 0,
-    totalSlides: 0,
-    isAnimating: false,
-    touchStartX: 0,
-    touchEndX: 0,
-    slideWidth: 0
-};
+// ==================== GLOBAL VARIABLES ====================
+let coachesSlider = null;
+let mobileMenuOpen = false;
+let autoplayInterval = null;
 
-// ==================== INITIALIZATION ====================
-function init() {
-    if (elements.coachesSlider) {
-        initializeSlider();
-    }
-    
-    setupEventListeners();
-    setupScrollAnimations();
-    updateSliderDimensions();
-}
-
-// ==================== NAVIGATION ====================
-function setupEventListeners() {
-    // Mobile menu toggle
-    if (elements.mobileMenuBtn) {
-        elements.mobileMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleMobileMenu();
-        });
-    }
-
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', (e) => {
-        if (elements.navLinks?.classList.contains('active') && 
-            !elements.navLinks.contains(e.target) && 
-            !elements.mobileMenuBtn?.contains(e.target)) {
-            closeMobileMenu();
+// ==================== COACHES SLIDER ====================
+class CoachesSlider {
+    constructor() {
+        this.container = document.querySelector('.slider-container');
+        if (!this.container) {
+            console.log('Slider container not found');
+            return;
         }
-    });
-
-    // Smooth scroll for navigation links
-    document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', handleNavClick);
-    });
-
-    // Contact button
-    const ctaBtn = document.querySelector('.cta-btn');
-    if (ctaBtn) {
-        ctaBtn.addEventListener('click', () => smoothScroll('#home'));
-    }
-
-    // Hero CTA buttons
-    document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
-        btn.addEventListener('click', handleCTAClick);
-    });
-
-    // Navbar scroll effect
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Window resize
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            updateSliderDimensions();
-            updateSliderPosition(false);
-        }, 150);
-    });
-}
-
-function toggleMobileMenu() {
-    const isActive = elements.navLinks.classList.toggle('active');
-    elements.mobileMenuBtn.classList.toggle('active');
-    document.body.style.overflow = isActive ? 'hidden' : '';
-}
-
-function closeMobileMenu() {
-    elements.navLinks.classList.remove('active');
-    elements.mobileMenuBtn.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function handleNavClick(e) {
-    e.preventDefault();
-    const targetId = e.currentTarget.getAttribute('href');
-    
-    if (targetId && targetId !== '#') {
-        smoothScroll(targetId);
-        if (window.innerWidth <= 768) {
-            closeMobileMenu();
-        }
-    }
-}
-
-function smoothScroll(targetId) {
-    const target = document.querySelector(targetId);
-    if (target) {
-        const offsetTop = target.offsetTop - 80;
-        window.scrollTo({
-            top: offsetTop,
-            behavior: 'smooth'
-        });
-    }
-}
-
-function handleCTAClick(e) {
-    // You can add your CTA logic here
-    console.log('CTA clicked:', e.currentTarget.textContent);
-    // Example: scroll to pricing or open modal
-    smoothScroll('#pricing');
-}
-
-function handleScroll() {
-    const scrollY = window.scrollY;
-    
-    // Navbar scroll effect
-    if (elements.navbar) {
-        if (scrollY > 50) {
-            elements.navbar.classList.add('scrolled');
-        } else {
-            elements.navbar.classList.remove('scrolled');
-        }
-    }
-}
-// ==================== PROFESSIONAL SLIDER FUNCTIONALITY ====================
-
-class ProfessionalSlider {
-    constructor(containerSelector) {
-        this.container = document.querySelector(containerSelector);
-        if (!this.container) return;
         
         this.track = this.container.querySelector('.slider-track');
         this.slides = this.container.querySelectorAll('.slide');
-        this.prevBtn = document.querySelector('.slider-btn-prev');
-        this.nextBtn = document.querySelector('.slider-btn-next');
-        this.paginationContainer = document.querySelector('.slider-pagination');
+        this.prevBtn = this.container.querySelector('.slider-nav.prev');
+        this.nextBtn = this.container.querySelector('.slider-nav.next');
+        this.paginationContainer = this.container.querySelector('.slider-pagination');
+        
+        if (!this.track || !this.slides.length) {
+            console.log('Slider elements not found');
+            return;
+        }
         
         this.currentIndex = 0;
         this.totalSlides = this.slides.length;
         this.isAnimating = false;
-        this.autoplayInterval = null;
         this.autoplayDelay = 5000; // 5 seconds
         
-        // Touch/Swipe
+        // Touch/swipe
         this.touchStartX = 0;
         this.touchEndX = 0;
-        this.touchStartY = 0;
-        this.touchEndY = 0;
-        this.isDragging = false;
         
         this.init();
     }
     
     init() {
-        if (this.totalSlides === 0) return;
+        console.log(`Initializing slider with ${this.totalSlides} slides`);
         
         this.createPagination();
-        this.attachEventListeners();
-        this.updateSlider(false);
+        this.setupEventListeners();
+        this.updateSlider(false); // No animation on initial load
         this.startAutoplay();
+        
+        // Set initial cursor
+        this.track.style.cursor = 'grab';
     }
     
     createPagination() {
@@ -180,57 +57,105 @@ class ProfessionalSlider {
             const dot = document.createElement('button');
             dot.className = 'pagination-dot';
             dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            dot.setAttribute('tabindex', '0');
             
             if (i === 0) {
                 dot.classList.add('active');
+                dot.setAttribute('aria-current', 'true');
             }
             
-            dot.addEventListener('click', () => this.goToSlide(i));
+            dot.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goToSlide(i);
+            });
+            
             this.paginationContainer.appendChild(dot);
         }
     }
     
-    attachEventListeners() {
+    setupEventListeners() {
         // Navigation buttons
         if (this.prevBtn) {
-            this.prevBtn.addEventListener('click', () => this.prevSlide());
+            this.prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.prevSlide();
+            });
         }
         
         if (this.nextBtn) {
-            this.nextBtn.addEventListener('click', () => this.nextSlide());
+            this.nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.nextSlide();
+            });
         }
         
         // Keyboard navigation
-        document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+        document.addEventListener('keydown', (e) => {
+            if (e.target.closest('.slider-container')) {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.prevSlide();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.nextSlide();
+                }
+            }
+        });
         
         // Touch events
-        this.track.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
-        this.track.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: true });
-        this.track.addEventListener('touchend', () => this.handleTouchEnd());
+        this.track.addEventListener('touchstart', (e) => {
+            this.touchStartX = e.touches[0].clientX;
+            this.stopAutoplay();
+        }, { passive: true });
         
-        // Mouse drag events (optional)
-        this.track.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.track.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.track.addEventListener('mouseup', () => this.handleMouseUp());
-        this.track.addEventListener('mouseleave', () => this.handleMouseUp());
+        this.track.addEventListener('touchmove', (e) => {
+            this.touchEndX = e.touches[0].clientX;
+        }, { passive: true });
         
-        // Pause autoplay on hover
+        this.track.addEventListener('touchend', () => {
+            const diff = this.touchStartX - this.touchEndX;
+            const swipeThreshold = 50;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    this.nextSlide();
+                } else {
+                    this.prevSlide();
+                }
+            }
+            
+            this.startAutoplay();
+        });
+        
+        // Mouse drag (optional)
+        let isDragging = false;
+        let mouseStartX = 0;
+        
+        this.track.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            mouseStartX = e.clientX;
+            this.stopAutoplay();
+            this.track.style.cursor = 'grabbing';
+        });
+        
+        this.track.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            this.track.style.cursor = 'grab';
+            this.startAutoplay();
+        });
+        
+        // Pause on hover
         this.container.addEventListener('mouseenter', () => this.stopAutoplay());
         this.container.addEventListener('mouseleave', () => this.startAutoplay());
         
-        // Pause autoplay on touch
-        this.track.addEventListener('touchstart', () => this.stopAutoplay(), { passive: true });
-        
-        // Window resize
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                this.updateSlider(false);
-            }, 150);
-        });
-        
-        // Visibility change (pause when tab is not visible)
+        // Pause when tab is not visible
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 this.stopAutoplay();
@@ -238,55 +163,61 @@ class ProfessionalSlider {
                 this.startAutoplay();
             }
         });
+        
+        // Window resize - reset slider position
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                this.updateSlider(false);
+            }, 150);
+        });
     }
     
-    // Navigation Methods
     nextSlide() {
         if (this.isAnimating) return;
         
-        const nextIndex = (this.currentIndex + 1) % this.totalSlides;
-        this.goToSlide(nextIndex);
+        this.currentIndex = (this.currentIndex + 1) % this.totalSlides;
+        this.updateSlider();
     }
     
     prevSlide() {
         if (this.isAnimating) return;
         
-        const prevIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
-        this.goToSlide(prevIndex);
+        this.currentIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
+        this.updateSlider();
     }
     
     goToSlide(index) {
         if (this.isAnimating || index === this.currentIndex) return;
+        if (index < 0 || index >= this.totalSlides) return;
         
         this.currentIndex = index;
-        this.updateSlider(true);
-        this.resetAutoplay();
+        this.updateSlider();
     }
     
     updateSlider(animate = true) {
+        if (this.isAnimating) return;
+        
         this.isAnimating = true;
         
         const translateX = -this.currentIndex * 100;
         
         if (animate) {
-            this.track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            this.track.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         } else {
             this.track.style.transition = 'none';
         }
         
         this.track.style.transform = `translateX(${translateX}%)`;
         
+        // Update pagination
         this.updatePagination();
-        this.updateNavigationButtons();
         
-        // Add slide change event
-        this.container.dispatchEvent(new CustomEvent('slideChange', {
-            detail: { currentIndex: this.currentIndex }
-        }));
-        
+        // Reset animation flag
         setTimeout(() => {
             this.isAnimating = false;
-        }, animate ? 600 : 0);
+        }, animate ? 500 : 0);
     }
     
     updatePagination() {
@@ -294,236 +225,286 @@ class ProfessionalSlider {
         
         const dots = this.paginationContainer.querySelectorAll('.pagination-dot');
         dots.forEach((dot, index) => {
-            if (index === this.currentIndex) {
-                dot.classList.add('active');
-                dot.setAttribute('aria-current', 'true');
-            } else {
-                dot.classList.remove('active');
-                dot.removeAttribute('aria-current');
-            }
+            const isActive = index === this.currentIndex;
+            dot.classList.toggle('active', isActive);
+            dot.setAttribute('aria-current', isActive ? 'true' : 'false');
         });
     }
     
-    updateNavigationButtons() {
-        if (this.prevBtn) {
-            this.prevBtn.disabled = false; // Always enabled for infinite loop
-        }
-        
-        if (this.nextBtn) {
-            this.nextBtn.disabled = false; // Always enabled for infinite loop
-        }
-    }
-    
-    // Touch/Swipe Handlers
-    handleTouchStart(e) {
-        this.touchStartX = e.touches[0].clientX;
-        this.touchStartY = e.touches[0].clientY;
-    }
-    
-    handleTouchMove(e) {
-        this.touchEndX = e.touches[0].clientX;
-        this.touchEndY = e.touches[0].clientY;
-    }
-    
-    handleTouchEnd() {
-        const swipeThreshold = 50;
-        const diffX = this.touchStartX - this.touchEndX;
-        const diffY = Math.abs(this.touchStartY - this.touchEndY);
-        
-        // Only trigger if horizontal swipe is greater than vertical
-        if (Math.abs(diffX) > swipeThreshold && Math.abs(diffX) > diffY) {
-            if (diffX > 0) {
-                // Swipe left - next slide
-                this.nextSlide();
-            } else {
-                // Swipe right - previous slide
-                this.prevSlide();
-            }
-        }
-        
-        // Reset touch positions
-        this.touchStartX = 0;
-        this.touchEndX = 0;
-        this.touchStartY = 0;
-        this.touchEndY = 0;
-    }
-    
-    // Mouse Drag Handlers (Optional)
-    handleMouseDown(e) {
-        this.isDragging = true;
-        this.touchStartX = e.clientX;
-        this.track.style.cursor = 'grabbing';
-    }
-    
-    handleMouseMove(e) {
-        if (!this.isDragging) return;
-        this.touchEndX = e.clientX;
-    }
-    
-    handleMouseUp() {
-        if (!this.isDragging) return;
-        
-        this.isDragging = false;
-        this.track.style.cursor = 'grab';
-        
-        const swipeThreshold = 50;
-        const diff = this.touchStartX - this.touchEndX;
-        
-        if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0) {
-                this.nextSlide();
-            } else {
-                this.prevSlide();
-            }
-        }
-        
-        this.touchStartX = 0;
-        this.touchEndX = 0;
-    }
-    
-    // Keyboard Navigation
-    handleKeyboard(e) {
-        if (e.key === 'ArrowLeft') {
-            this.prevSlide();
-        } else if (e.key === 'ArrowRight') {
-            this.nextSlide();
-        }
-    }
-    
-    // Autoplay Methods
     startAutoplay() {
-        this.stopAutoplay(); // Clear any existing interval
+        this.stopAutoplay();
         
-        this.autoplayInterval = setInterval(() => {
+        autoplayInterval = setInterval(() => {
             this.nextSlide();
         }, this.autoplayDelay);
     }
     
     stopAutoplay() {
-        if (this.autoplayInterval) {
-            clearInterval(this.autoplayInterval);
-            this.autoplayInterval = null;
+        if (autoplayInterval) {
+            clearInterval(autoplayInterval);
+            autoplayInterval = null;
         }
     }
-    
-    resetAutoplay() {
-        this.stopAutoplay();
-        this.startAutoplay();
-    }
-    
-    // Public API
-    destroy() {
-        this.stopAutoplay();
-        // Remove event listeners if needed
-    }
-    
-    setAutoplayDelay(delay) {
-        this.autoplayDelay = delay;
-        this.resetAutoplay();
-    }
 }
 
-// ==================== INITIALIZE SLIDER ====================
-let coachSlider;
-
-function initializeSlider() {
-    coachSlider = new ProfessionalSlider('.slider-container');
+// ==================== MOBILE MENU ====================
+function setupMobileMenu() {
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
     
-    // Optional: Listen to slide change events
-    const container = document.querySelector('.slider-container');
-    if (container) {
-        container.addEventListener('slideChange', (e) => {
-            console.log('Current slide:', e.detail.currentIndex + 1);
-        });
+    if (!mobileMenuBtn || !navLinks) {
+        console.log('Mobile menu elements not found');
+        return;
     }
-}
-
-// ==================== OTHER PAGE FUNCTIONALITY ====================
-
-// Navigation
-const navbar = document.querySelector('.navbar');
-const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-const navLinks = document.querySelector('.nav-links');
-
-function setupNavigation() {
-    // Mobile menu toggle
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleMobileMenu();
-        });
-    }
-
-    // Close mobile menu when clicking outside
+    
+    mobileMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileMenu();
+    });
+    
+    // Close menu when clicking outside
     document.addEventListener('click', (e) => {
-        if (navLinks?.classList.contains('active') && 
+        if (mobileMenuOpen && 
             !navLinks.contains(e.target) && 
-            !mobileMenuBtn?.contains(e.target)) {
+            !mobileMenuBtn.contains(e.target)) {
             closeMobileMenu();
         }
     });
-
-    // Smooth scroll for navigation links
+    
+    // Close menu when clicking links
     document.querySelectorAll('.nav-links a').forEach(link => {
-        link.addEventListener('click', handleNavClick);
+        link.addEventListener('click', () => {
+            if (mobileMenuOpen) {
+                closeMobileMenu();
+            }
+        });
     });
-
-    // Navbar scroll effect
-    window.addEventListener('scroll', handleScroll, { passive: true });
-}
-
-function toggleMobileMenu() {
-    const isActive = navLinks.classList.toggle('active');
-    mobileMenuBtn.classList.toggle('active');
-    document.body.style.overflow = isActive ? 'hidden' : '';
-}
-
-function closeMobileMenu() {
-    navLinks.classList.remove('active');
-    mobileMenuBtn.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function handleNavClick(e) {
-    e.preventDefault();
-    const targetId = e.currentTarget.getAttribute('href');
     
-    if (targetId && targetId !== '#') {
-        smoothScroll(targetId);
-        if (window.innerWidth <= 768) {
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileMenuOpen) {
+            closeMobileMenu();
+        }
+    });
+    
+    function toggleMobileMenu() {
+        mobileMenuOpen = !mobileMenuOpen;
+        
+        if (mobileMenuOpen) {
+            navLinks.classList.add('active');
+            mobileMenuBtn.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        } else {
             closeMobileMenu();
         }
     }
-}
-
-function smoothScroll(targetId) {
-    const target = document.querySelector(targetId);
-    if (target) {
-        const offsetTop = target.offsetTop - 80;
-        window.scrollTo({
-            top: offsetTop,
-            behavior: 'smooth'
-        });
+    
+    function closeMobileMenu() {
+        mobileMenuOpen = false;
+        navLinks.classList.remove('active');
+        mobileMenuBtn.classList.remove('active');
+        document.body.style.overflow = '';
     }
 }
 
-function handleScroll() {
-    const scrollY = window.scrollY;
+// ==================== NAVBAR SCROLL EFFECT ====================
+function setupNavbarScroll() {
+    const navbar = document.querySelector('.navbar');
+    if (!navbar) return;
     
-    if (navbar) {
-        if (scrollY > 50) {
+    let lastScrollTop = 0;
+    const scrollThreshold = 50;
+    
+    window.addEventListener('scroll', () => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add/remove scrolled class based on scroll position
+        if (scrollTop > scrollThreshold) {
             navbar.classList.add('scrolled');
         } else {
             navbar.classList.remove('scrolled');
         }
+        
+        lastScrollTop = scrollTop;
+    });
+}
+
+// ==================== SMOOTH SCROLL ====================
+function setupSmoothScroll() {
+    // Select all anchor links with href starting with #
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    
+    anchorLinks.forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            
+            // Skip if it's just "#" or empty
+            if (href === '#' || href === '') return;
+            
+            const targetElement = document.querySelector(href);
+            if (!targetElement) return;
+            
+            e.preventDefault();
+            
+            // Calculate scroll position
+            const navbar = document.querySelector('.navbar');
+            const navbarHeight = navbar ? navbar.offsetHeight : 80;
+            const elementPosition = targetElement.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
+            
+            // Smooth scroll to target
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        });
+    });
+}
+
+// ==================== BUTTON HANDLERS ====================
+function setupCTAButtons() {
+    // Handle main CTA buttons
+    const ctaButtons = document.querySelectorAll('.cta-btn, .btn-primary:not(.hero-cta .btn-primary)');
+    ctaButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Scroll to pricing section
+            const pricingSection = document.querySelector('#pricing');
+            if (pricingSection) {
+                const navbar = document.querySelector('.navbar');
+                const navbarHeight = navbar ? navbar.offsetHeight : 80;
+                const targetPosition = pricingSection.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // Handle coach booking buttons
+    const coachButtons = document.querySelectorAll('.coach-cta');
+    coachButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Booking feature coming soon! You will be able to book sessions with coaches here.');
+        });
+    });
+    
+    // Handle course enrollment buttons
+    const courseButtons = document.querySelectorAll('.course-btn');
+    courseButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Enrollment feature coming soon! You will be able to enroll in courses here.');
+        });
+    });
+    
+    // Handle pricing buttons
+    const pricingButtons = document.querySelectorAll('.pricing-btn');
+    pricingButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Subscription feature coming soon! You will be able to choose your plan here.');
+        });
+    });
+    
+    // Handle secondary buttons (watch demo, etc.)
+    const secondaryButtons = document.querySelectorAll('.btn-secondary');
+    secondaryButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Demo feature coming soon! You will be able to watch tutorial videos here.');
+        });
+    });
+}
+
+// ==================== FORM HANDLING ====================
+function setupForms() {
+    const newsletterForm = document.querySelector('.newsletter-form');
+    if (!newsletterForm) return;
+    
+    newsletterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const emailInput = this.querySelector('input[type="email"]');
+        const email = emailInput.value.trim();
+        
+        if (!email) {
+            showNotification('Please enter your email address', 'error');
+            emailInput.focus();
+            return;
+        }
+        
+        if (!isValidEmail(email)) {
+            showNotification('Please enter a valid email address', 'error');
+            emailInput.focus();
+            return;
+        }
+        
+        // Simulate form submission
+        console.log('Subscribing email:', email);
+        showNotification('Thank you for subscribing to our newsletter!', 'success');
+        emailInput.value = '';
+    });
+    
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+    
+    function showNotification(message, type = 'success') {
+        // Remove existing notification if any
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            padding: 12px 24px;
+            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            color: white;
+            border-radius: 8px;
+            z-index: 9999;
+            animation: notificationSlideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-weight: 500;
+            max-width: 300px;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'notificationSlideOut 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 3000);
     }
 }
 
-// Scroll Animations
+// ==================== SCROLL ANIMATIONS ====================
 function setupScrollAnimations() {
-    const animatedElements = document.querySelectorAll(
-        '.feature-card, .learn-card, .course-card, .testimonial-card, .pricing-card'
-    );
+    // Check if IntersectionObserver is supported
+    if (!('IntersectionObserver' in window)) {
+        // Fallback for older browsers
+        document.querySelectorAll('.fade-in').forEach(el => {
+            el.classList.add('visible');
+        });
+        return;
+    }
     
     const observerOptions = {
         threshold: 0.1,
@@ -533,167 +514,47 @@ function setupScrollAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in', 'visible');
+                entry.target.classList.add('visible');
             }
         });
     }, observerOptions);
     
-    animatedElements.forEach(el => {
-        el.classList.add('fade-in');
-        observer.observe(el);
-    });
-}
-
-// CTA Buttons
-function setupCTAButtons() {
-    document.querySelectorAll('.btn-primary, .btn-secondary, .cta-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Add your CTA logic here
-            console.log('CTA clicked:', btn.textContent);
-            smoothScroll('#pricing');
-        });
+    // Observe all cards
+    const cards = document.querySelectorAll('.feature-card, .learn-card, .course-card, .testimonial-card, .pricing-card, .coach-card');
+    cards.forEach(card => {
+        card.classList.add('fade-in');
+        observer.observe(card);
     });
 }
 
 // ==================== INITIALIZATION ====================
-
-function init() {
-    setupNavigation();
-    setupScrollAnimations();
-    setupCTAButtons();
-    initializeSlider();
-}
-
-// Fast initialization
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
-
-// Export for debugging (optional)
-if (typeof window !== 'undefined') {
-    window.sliderAPI = {
-        instance: () => coachSlider,
-        goToSlide: (index) => coachSlider?.goToSlide(index),
-        next: () => coachSlider?.nextSlide(),
-        prev: () => coachSlider?.prevSlide(),
-        startAutoplay: () => coachSlider?.startAutoplay(),
-        stopAutoplay: () => coachSlider?.stopAutoplay()
-    };
-}
-// ==================== SCROLL ANIMATIONS ====================
-function setupScrollAnimations() {
-    const animatedElements = document.querySelectorAll(
-        '.feature-card, .learn-card, .course-card, .testimonial-card, .pricing-card, .coach-card'
-    );
+function initializeWebsite() {
+    console.log('Initializing Elevn Coaching Center...');
     
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in', 'visible');
-            }
-        });
-    }, observerOptions);
-    
-    animatedElements.forEach(el => {
-        el.classList.add('fade-in');
-        observer.observe(el);
-    });
-}
-
-// ==================== AUTO SLIDER (OPTIONAL) ====================
-let autoSlideInterval;
-
-function startAutoSlide() {
-    stopAutoSlide(); // Clear any existing interval
-    
-    autoSlideInterval = setInterval(() => {
-        if (sliderState.currentIndex < sliderState.totalSlides - 1) {
-            navigateSlider('next');
-        } else {
-            sliderState.currentIndex = 0;
-            updateSliderPosition(true);
-        }
-    }, 5000); // Change slide every 5 seconds
-}
-
-function stopAutoSlide() {
-    if (autoSlideInterval) {
-        clearInterval(autoSlideInterval);
+    try {
+        // Initialize coaches slider
+        coachesSlider = new CoachesSlider();
+        
+        // Setup other functionality
+        setupMobileMenu();
+        setupNavbarScroll();
+        setupSmoothScroll();
+        setupScrollAnimations();
+        setupCTAButtons();
+        setupForms();
+        
+        console.log('✅ Website initialized successfully!');
+        
+    } catch (error) {
+        console.error('❌ Error during initialization:', error);
     }
 }
 
-// Pause auto-slide on user interaction
-function pauseAutoSlideOnInteraction() {
-    if (elements.coachesSlider) {
-        elements.coachesSlider.addEventListener('mouseenter', stopAutoSlide);
-        elements.coachesSlider.addEventListener('touchstart', stopAutoSlide);
-    }
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// ==================== PERFORMANCE OPTIMIZATION ====================
-// Lazy load images (if you add actual images later)
-function setupLazyLoading() {
-    const images = document.querySelectorAll('img[data-src]');
-    
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
-                observer.unobserve(img);
-            }
-        });
-    });
-    
-    images.forEach(img => imageObserver.observe(img));
-}
-
-// ==================== INITIALIZE ON PAGE LOAD ====================
-// Fast initialization
+// ==================== STARTUP ====================
+// Initialize when DOM is loaded
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', initializeWebsite);
 } else {
-    init();
-}
-
-// Additional setup after full page load
-window.addEventListener('load', () => {
-    setupLazyLoading();
-    
-    // Uncomment to enable auto-slide
-    // startAutoSlide();
-    // pauseAutoSlideOnInteraction();
-});
-
-// ==================== EXPORT FOR TESTING (OPTIONAL) ====================
-// If you need to access these functions from the console for debugging
-if (typeof window !== 'undefined') {
-    window.sliderDebug = {
-        state: sliderState,
-        goToSlide,
-        navigateSlider,
-        startAutoSlide,
-        stopAutoSlide
-    };
+    // DOM already loaded, initialize immediately
+    setTimeout(initializeWebsite, 100);
 }
